@@ -1,11 +1,13 @@
 package at.fhj.msd.server;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+
+import at.fhj.msd.LindromeReply;
+import at.fhj.msd.LindromeRequest;
 
 public class Server {
 
@@ -23,42 +25,53 @@ public class Server {
 
     public void listen() {
 
-        while (true) { 
-    
-        try (ServerSocket server = new ServerSocket(this.pt); 
-        Socket socket = server.accept(); 
-        PrintWriter out = new PrintWriter(socket.getOutputStream(), true); 
-        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+        while (true) {
 
-            System.out.printf("client #%d connected...\n", ++this.count);
-            out.println("Hello my fellow socket, welcome to Lindrome Tester 5001!");
-            out.println("Lets start... Give me a Lindrome!");
-
-            String message;
-            while((message = in.readLine()) != null) {
-
-                out.println(checkLindrome(message));
-                
-
-            }
+            try (ServerSocket server = new ServerSocket(this.pt); 
+            Socket socket = server.accept(); 
+            ObjectOutputStream outObject = new ObjectOutputStream(socket.getOutputStream());
+            ObjectInputStream inObject = new ObjectInputStream(socket.getInputStream());) {
 
 
-            
+                System.out.printf("client #%d connected...\n", ++this.count);
+                outObject.writeObject("Hello my fellow socket, welcome to Lindrome Tester 5001!");
+                outObject.writeObject("Let's start... Give me a Lindrome!");
 
-        } catch (IOException e) {
+                String message;
+                boolean status = true;
+                while (status) {
+
+                    LindromeRequest request = (LindromeRequest) inObject.readObject();
+                    String word = request.getWord();
+
+                    boolean isLindrome = checkLindrome(word);
+                    String feedback = isLindrome ? "The given word is a Lindrome!" : "SADDDDDGEEE --> Not a Lindrome";
+
+                    LindromeReply reply = new LindromeReply(isLindrome, feedback);
+                    outObject.writeObject(reply);
+
+                    String quit = (String) inObject.readObject();
+
+                    if (quit.equalsIgnoreCase("y")) {
+                        outObject.writeObject("Shutting Down....");
+                        status = false;
+                    }
+                }
+
+            } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
-           }
+        }
     }
 
-    public String checkLindrome(String message) {
+    public boolean checkLindrome(String message) {
 
         char[] letters = message.toCharArray();
         char[] lettersReversed = new char[letters.length];
 
         int count = 0;
 
-        for (int i = letters.length -1; i >= 0; i--) {
+        for (int i = letters.length - 1; i >= 0; i--) {
 
             lettersReversed[count++] = letters[i];
 
@@ -67,10 +80,10 @@ public class Server {
         String reversed = new String(lettersReversed);
 
         if (!message.equals(reversed)) {
-            return "The given word is not a lindrome!";
+            return false;
         }
 
-        return "LINDROME!";
+        return true;
     }
 
 }
