@@ -66,24 +66,7 @@ public class Server {
 
     public boolean checkLindrome(String message) {
 
-        char[] letters = message.toCharArray();
-        char[] lettersReversed = new char[letters.length];
-
-        int count = 0;
-
-        for (int i = letters.length - 1; i >= 0; i--) {
-
-            lettersReversed[count++] = letters[i];
-
-        }
-
-        String reversed = new String(lettersReversed);
-
-        if (!message.equals(reversed)) {
-            return false;
-        }
-
-        return true;
+     return message.equals(new StringBuilder(message).reverse().toString());
     }
 
 }
